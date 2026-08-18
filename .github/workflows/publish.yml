@@ -19,7 +19,7 @@ jobs:
           node-version: 22.22.3
           registry-url: https://registry.npmjs.org
       - name: Install the npm CLI version required for trusted publishing
-        run: npm install --global npm@11.5.1
+        run: npm install --global npm@11.15.0
       - run: npm ci
       - name: Publish once
         run: |
@@ -30,3 +30,13 @@ jobs:
             exit 0
           fi
           npm publish --access public
+      - name: Install the official MCP Registry publisher
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+      - name: Publish hosted and stdio MCP metadata
+        run: |
+          ./mcp-publisher validate ./server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish ./server.json
