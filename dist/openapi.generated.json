@@ -1,0 +1,588 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Agent Push Kit API",
+        "version": "0.1.0",
+        "summary": "Notifications that applications and agents can send, read, and manage.",
+        "description": "The complete Agent Push Kit REST API. Application event ingestion uses an organization key beginning with `apk_`. Authenticated user operations accept either an Agent Push Kit login JWT or an agent access token beginning with `apt_`.",
+        "contact": { "name": "Agent Push Kit", "url": "https://agentpushkit.com" },
+        "license": { "name": "MIT", "url": "https://opensource.org/license/mit" }
+    },
+    "servers": [
+        {
+            "url": "https://api.chatdna.co/agent-push-kit/v1",
+            "description": "Production"
+        }
+    ],
+    "tags": [
+        { "name": "Authentication" },
+        { "name": "Account" },
+        { "name": "Customer accounts" },
+        { "name": "Agent tokens" },
+        { "name": "Events" },
+        { "name": "Preferences" },
+        { "name": "Devices" },
+        { "name": "Health" }
+    ],
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "operationId": "register",
+                "tags": ["Authentication"],
+                "summary": "Create a user and first customer account",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/Register" },
+                "responses": {
+                    "201": { "description": "Registered and authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "409": { "$ref": "#/components/responses/Conflict" }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "operationId": "loginWithPassword",
+                "tags": ["Authentication"],
+                "summary": "Log in with email and password",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/PasswordLogin" },
+                "responses": {
+                    "201": { "description": "Authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/auth/google": {
+            "post": {
+                "operationId": "loginWithGoogle",
+                "tags": ["Authentication"],
+                "summary": "Log in or attach an account using a verified Google ID token",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/ProviderLogin" },
+                "responses": {
+                    "201": { "description": "Authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "409": { "$ref": "#/components/responses/Conflict" }
+                }
+            }
+        },
+        "/auth/apple": {
+            "post": {
+                "operationId": "loginWithApple",
+                "tags": ["Authentication"],
+                "summary": "Log in or attach an account using a Sign in with Apple identity token",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/ProviderLogin" },
+                "responses": {
+                    "201": { "description": "Authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "409": { "$ref": "#/components/responses/Conflict" }
+                }
+            }
+        },
+        "/auth/password-reset/request": {
+            "post": {
+                "operationId": "requestPasswordReset",
+                "tags": ["Authentication"],
+                "summary": "Email a single-use password reset token",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/PasswordResetRequest" },
+                "responses": {
+                    "201": { "description": "Accepted whether or not the email exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AcceptedResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" }
+                }
+            }
+        },
+        "/auth/password-reset/complete": {
+            "post": {
+                "operationId": "completePasswordReset",
+                "tags": ["Authentication"],
+                "summary": "Choose a new password and log in",
+                "security": [],
+                "requestBody": { "$ref": "#/components/requestBodies/PasswordResetComplete" },
+                "responses": {
+                    "201": { "description": "Password changed and authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" }
+                }
+            }
+        },
+        "/me": {
+            "get": {
+                "operationId": "getCurrentAccount",
+                "tags": ["Account"],
+                "summary": "Get the current user and customer accounts",
+                "responses": {
+                    "200": { "description": "Current account", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CurrentAccount" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            },
+            "delete": {
+                "operationId": "deleteCurrentAccount",
+                "tags": ["Account"],
+                "summary": "Delete the current user and customer accounts they own",
+                "responses": {
+                    "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeletedResponse" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/organizations": {
+            "get": {
+                "operationId": "listOrganizations",
+                "tags": ["Customer accounts"],
+                "summary": "List customer accounts available to the current user",
+                "responses": {
+                    "200": { "description": "Customer accounts", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            },
+            "post": {
+                "operationId": "createOrganization",
+                "tags": ["Customer accounts"],
+                "summary": "Create another Agent Push Kit customer account",
+                "requestBody": { "$ref": "#/components/requestBodies/CreateOrganization" },
+                "responses": {
+                    "201": { "description": "Created; the organization API key is returned only now", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrganizationCreated" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/members": {
+            "get": {
+                "operationId": "listOrganizationMembers",
+                "tags": ["Customer accounts"],
+                "summary": "List members of a customer account",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "responses": {
+                    "200": { "description": "Members", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Membership" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "post": {
+                "operationId": "addOrganizationMember",
+                "tags": ["Customer accounts"],
+                "summary": "Add an already-registered user to a customer account",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "requestBody": { "$ref": "#/components/requestBodies/AddMember" },
+                "responses": {
+                    "201": { "description": "Member added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Membership" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "403": { "$ref": "#/components/responses/Forbidden" },
+                    "404": { "$ref": "#/components/responses/NotFound" },
+                    "409": { "$ref": "#/components/responses/Conflict" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/api-key/regenerate": {
+            "post": {
+                "operationId": "regenerateOrganizationApiKey",
+                "tags": ["Customer accounts"],
+                "summary": "Rotate the application event-ingestion key",
+                "description": "The previous `apk_` key stops working immediately. The replacement is returned only in this response.",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "responses": {
+                    "201": { "description": "Key regenerated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrganizationApiKeyCreated" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "403": { "$ref": "#/components/responses/Forbidden" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/agent-tokens": {
+            "get": {
+                "operationId": "listAgentTokens",
+                "tags": ["Agent tokens"],
+                "summary": "List agent access tokens without their secrets",
+                "responses": {
+                    "200": { "description": "Agent tokens", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AgentToken" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            },
+            "post": {
+                "operationId": "createAgentToken",
+                "tags": ["Agent tokens"],
+                "summary": "Create a named non-expiring agent token",
+                "description": "The raw `apt_` token is shown once. Store it before dismissing the response.",
+                "requestBody": { "$ref": "#/components/requestBodies/CreateAgentToken" },
+                "responses": {
+                    "201": { "description": "Token created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AgentTokenCreated" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/agent-tokens/{tokenId}": {
+            "delete": {
+                "operationId": "revokeAgentToken",
+                "tags": ["Agent tokens"],
+                "summary": "Revoke one of the current user's agent tokens",
+                "parameters": [{ "$ref": "#/components/parameters/TokenId" }],
+                "responses": {
+                    "200": { "description": "Revoked or already absent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RevokedResponse" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/events": {
+            "post": {
+                "operationId": "sendEvent",
+                "tags": ["Events"],
+                "summary": "Send an event using an application ingestion key",
+                "security": [{ "OrganizationApiKey": [] }],
+                "requestBody": { "$ref": "#/components/requestBodies/SendEvent" },
+                "responses": {
+                    "201": { "description": "Event stored and push delivery attempted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IngestionResult" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/events": {
+            "get": {
+                "operationId": "listEvents",
+                "tags": ["Events"],
+                "summary": "List a paginated inbox",
+                "parameters": [
+                    { "$ref": "#/components/parameters/OrganizationId" },
+                    { "$ref": "#/components/parameters/ServiceName" },
+                    { "$ref": "#/components/parameters/EventType" },
+                    { "$ref": "#/components/parameters/SearchText" },
+                    { "$ref": "#/components/parameters/Cursor" },
+                    { "$ref": "#/components/parameters/Limit" }
+                ],
+                "responses": {
+                    "200": { "description": "Event page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventPage" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "post": {
+                "operationId": "sendEventAsUser",
+                "tags": ["Events"],
+                "summary": "Send an event as an authenticated user or agent",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "requestBody": { "$ref": "#/components/requestBodies/SendEvent" },
+                "responses": {
+                    "201": { "description": "Event stored and push delivery attempted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IngestionResult" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/events/search": {
+            "post": {
+                "operationId": "searchEvents",
+                "tags": ["Events"],
+                "summary": "Search events with a validated Boolean filter tree",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "requestBody": { "$ref": "#/components/requestBodies/SearchEvents" },
+                "responses": {
+                    "201": { "description": "Event page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventPage" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/events/{eventId}": {
+            "get": {
+                "operationId": "getEvent",
+                "tags": ["Events"],
+                "summary": "Get one event including metadata",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }, { "$ref": "#/components/parameters/EventId" }],
+                "responses": {
+                    "200": { "description": "Event", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventDetail" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/services": {
+            "get": {
+                "operationId": "listServices",
+                "tags": ["Events"],
+                "summary": "List services discovered from ingested events",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "responses": {
+                    "200": { "description": "Services", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Service" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/types": {
+            "get": {
+                "operationId": "listNotificationTypes",
+                "tags": ["Events"],
+                "summary": "List distinct notification types",
+                "parameters": [
+                    { "$ref": "#/components/parameters/OrganizationId" },
+                    { "name": "serviceId", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Optionally restrict types to one service ID." }
+                ],
+                "responses": {
+                    "200": { "description": "Notification types", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "string" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/organizations/{organizationId}/preferences": {
+            "get": {
+                "operationId": "listPreferences",
+                "tags": ["Preferences"],
+                "summary": "List service defaults and exact-type overrides",
+                "parameters": [{ "$ref": "#/components/parameters/OrganizationId" }],
+                "responses": {
+                    "200": { "description": "Preferences", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ServicePreference" } } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/services/{serviceId}/preference": {
+            "put": {
+                "operationId": "setServicePreference",
+                "tags": ["Preferences"],
+                "summary": "Enable or disable pushes for a service by default",
+                "parameters": [{ "$ref": "#/components/parameters/ServiceId" }],
+                "requestBody": { "$ref": "#/components/requestBodies/SetEnabled" },
+                "responses": {
+                    "200": { "description": "Preference saved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreferenceRecord" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/services/{serviceId}/types/{type}/preference": {
+            "put": {
+                "operationId": "setTypePreference",
+                "tags": ["Preferences"],
+                "summary": "Override push delivery for one exact notification type",
+                "parameters": [{ "$ref": "#/components/parameters/ServiceId" }, { "$ref": "#/components/parameters/TypePath" }],
+                "requestBody": { "$ref": "#/components/requestBodies/SetEnabled" },
+                "responses": {
+                    "200": { "description": "Preference saved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreferenceRecord" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "delete": {
+                "operationId": "removeTypePreference",
+                "tags": ["Preferences"],
+                "summary": "Remove an exact-type override so it inherits the service default",
+                "parameters": [{ "$ref": "#/components/parameters/ServiceId" }, { "$ref": "#/components/parameters/TypePath" }],
+                "responses": {
+                    "200": { "description": "Override removed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InheritedResponse" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/devices": {
+            "post": {
+                "operationId": "registerDevice",
+                "tags": ["Devices"],
+                "summary": "Register or refresh an APNs device",
+                "requestBody": { "$ref": "#/components/requestBodies/RegisterDevice" },
+                "responses": {
+                    "201": { "description": "Device registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/devices/{installationId}": {
+            "delete": {
+                "operationId": "removeDevice",
+                "tags": ["Devices"],
+                "summary": "Disable push delivery to one installation",
+                "parameters": [{ "$ref": "#/components/parameters/InstallationId" }],
+                "responses": {
+                    "200": { "description": "Device disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DisabledResponse" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/web-push/configuration": {
+            "get": {
+                "operationId": "getWebPushConfiguration",
+                "tags": ["Devices"],
+                "summary": "Get browser push availability and its public VAPID key",
+                "responses": {
+                    "200": { "description": "Browser push configuration", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WebPushConfiguration" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/web-push/subscriptions": {
+            "post": {
+                "operationId": "registerWebPushSubscription",
+                "tags": ["Devices"],
+                "summary": "Register or refresh a browser push subscription",
+                "requestBody": { "$ref": "#/components/requestBodies/RegisterWebPushSubscription" },
+                "responses": {
+                    "201": { "description": "Browser subscription registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WebPushSubscription" } } } },
+                    "400": { "$ref": "#/components/responses/BadRequest" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/web-push/subscriptions/{subscriptionId}": {
+            "delete": {
+                "operationId": "removeWebPushSubscription",
+                "tags": ["Devices"],
+                "summary": "Disable a browser push subscription",
+                "parameters": [{ "$ref": "#/components/parameters/SubscriptionId" }],
+                "responses": {
+                    "200": { "description": "Browser subscription disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DisabledResponse" } } } },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "operationId": "getHealth",
+                "tags": ["Health"],
+                "summary": "Check Agent Push Kit API health",
+                "security": [],
+                "responses": {
+                    "200": { "description": "Healthy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } } }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "callMcp",
+                "tags": ["Agent tokens"],
+                "summary": "Connect through stateless MCP Streamable HTTP",
+                "description": "This endpoint accepts only an `apt_` agent access token.",
+                "security": [{ "AgentToken": [] }],
+                "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "additionalProperties": true } } } },
+                "responses": {
+                    "200": { "description": "MCP JSON-RPC or SSE response" },
+                    "202": { "description": "MCP notification accepted" },
+                    "401": { "$ref": "#/components/responses/Unauthorized" }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "UserOrAgent": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Agent Push Kit JWT or apt_ token",
+                "description": "Use the login JWT in the human app or a named `apt_` token for agents."
+            },
+            "AgentToken": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "apt_",
+                "description": "A named agent access token created by an authenticated user."
+            },
+            "OrganizationApiKey": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "apk_",
+                "description": "An organization-level application ingestion key."
+            }
+        },
+        "parameters": {
+            "OrganizationId": { "name": "organizationId", "in": "path", "required": true, "schema": { "type": "string" } },
+            "TokenId": { "name": "tokenId", "in": "path", "required": true, "schema": { "type": "string" } },
+            "EventId": { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string" } },
+            "ServiceId": { "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+            "TypePath": { "name": "type", "in": "path", "required": true, "schema": { "type": "string", "maxLength": 120 } },
+            "InstallationId": { "name": "installationId", "in": "path", "required": true, "schema": { "type": "string", "minLength": 4, "maxLength": 200 } },
+            "SubscriptionId": { "name": "subscriptionId", "in": "path", "required": true, "schema": { "type": "string" } },
+            "ServiceName": { "name": "service", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+            "EventType": { "name": "type", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+            "SearchText": { "name": "search", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 200 } },
+            "Cursor": { "name": "cursor", "in": "query", "required": false, "schema": { "type": "string" } },
+            "Limit": { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 } }
+        },
+        "requestBodies": {
+            "Register": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterInput" }, "example": { "email": "alex@example.com", "password": "correct horse battery staple", "displayName": "Alex" } } } },
+            "PasswordLogin": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasswordLoginInput" } } } },
+            "ProviderLogin": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProviderLoginInput" } } } },
+            "PasswordResetRequest": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasswordResetRequestInput" } } } },
+            "PasswordResetComplete": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasswordResetCompleteInput" } } } },
+            "CreateOrganization": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrganizationInput" } } } },
+            "AddMember": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddMemberInput" } } } },
+            "CreateAgentToken": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAgentTokenInput" } } } },
+            "SendEvent": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendEventInput" }, "example": { "service": "chatdna", "type": "user.signup", "title": "New user signup", "body": "alex@example.com created an account", "externalId": "signup_user_123", "actionUrl": "https://example.com/users/123", "metadata": { "userId": "123", "plan": "trial" } } } } },
+            "SearchEvents": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SearchEventsInput" }, "example": { "filter": { "operator": "AND", "children": [{ "field": "service", "comparison": "equals", "value": "chatdna" }, { "field": "body", "comparison": "contains", "value": "alex" }] }, "limit": 50 } } } },
+            "SetEnabled": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SetEnabledInput" } } } },
+            "RegisterDevice": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterDeviceInput" } } } },
+            "RegisterWebPushSubscription": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterWebPushSubscriptionInput" } } } }
+        },
+        "responses": {
+            "BadRequest": { "description": "Invalid request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+            "Unauthorized": { "description": "Missing, invalid, or revoked credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+            "Forbidden": { "description": "The operation requires an owner", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+            "NotFound": { "description": "The resource is absent or outside the current user's customer accounts", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+            "Conflict": { "description": "The requested identity or membership already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        },
+        "schemas": {
+            "RegisterInput": { "type": "object", "additionalProperties": false, "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email", "maxLength": 320 }, "password": { "type": "string", "minLength": 8, "maxLength": 200 }, "displayName": { "type": "string", "maxLength": 120 } } },
+            "PasswordLoginInput": { "type": "object", "additionalProperties": false, "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email", "maxLength": 320 }, "password": { "type": "string", "minLength": 1, "maxLength": 200 } } },
+            "ProviderLoginInput": { "type": "object", "additionalProperties": false, "required": ["idToken"], "properties": { "idToken": { "type": "string", "minLength": 20 }, "displayName": { "type": "string", "maxLength": 120 } } },
+            "PasswordResetRequestInput": { "type": "object", "additionalProperties": false, "required": ["email"], "properties": { "email": { "type": "string", "format": "email", "maxLength": 320 } } },
+            "PasswordResetCompleteInput": { "type": "object", "additionalProperties": false, "required": ["token", "password"], "properties": { "token": { "type": "string", "minLength": 20 }, "password": { "type": "string", "minLength": 8, "maxLength": 200 } } },
+            "CreateOrganizationInput": { "type": "object", "additionalProperties": false, "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 } } },
+            "AddMemberInput": { "type": "object", "additionalProperties": false, "required": ["email"], "properties": { "email": { "type": "string", "format": "email", "maxLength": 320 } } },
+            "CreateAgentTokenInput": { "type": "object", "additionalProperties": false, "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 } } },
+            "SendEventInput": { "type": "object", "additionalProperties": false, "required": ["service", "type", "title", "body"], "properties": { "service": { "type": "string", "minLength": 1, "maxLength": 120 }, "serviceDisplayName": { "type": "string", "minLength": 1, "maxLength": 120 }, "type": { "type": "string", "minLength": 1, "maxLength": 120 }, "title": { "type": "string", "minLength": 1, "maxLength": 200 }, "body": { "type": "string", "minLength": 1, "maxLength": 10000 }, "metadata": { "type": "object", "additionalProperties": true }, "externalId": { "type": "string", "minLength": 1, "maxLength": 300 }, "actionUrl": { "type": "string", "format": "uri", "maxLength": 2000 } } },
+            "SearchEventsInput": { "type": "object", "additionalProperties": false, "required": ["filter"], "properties": { "filter": { "$ref": "#/components/schemas/EventFilter" }, "cursor": { "type": "string" }, "limit": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 } } },
+            "EventFilter": { "oneOf": [{ "$ref": "#/components/schemas/FilterGroup" }, { "$ref": "#/components/schemas/FilterNot" }, { "$ref": "#/components/schemas/TextFilterCondition" }, { "$ref": "#/components/schemas/TimeFilterCondition" }] },
+            "FilterGroup": { "type": "object", "additionalProperties": false, "required": ["operator", "children"], "properties": { "operator": { "type": "string", "enum": ["AND", "OR"] }, "children": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/components/schemas/EventFilter" } } } },
+            "FilterNot": { "type": "object", "additionalProperties": false, "required": ["operator", "child"], "properties": { "operator": { "type": "string", "const": "NOT" }, "child": { "$ref": "#/components/schemas/EventFilter" } } },
+            "TextFilterCondition": { "type": "object", "additionalProperties": false, "required": ["field", "comparison", "value"], "properties": { "field": { "type": "string", "enum": ["service", "type", "title", "body"] }, "comparison": { "type": "string", "enum": ["equals", "contains"] }, "value": { "type": "string", "minLength": 1, "maxLength": 200 } } },
+            "TimeFilterCondition": { "type": "object", "additionalProperties": false, "required": ["field", "comparison", "value"], "properties": { "field": { "type": "string", "enum": ["createdAt"] }, "comparison": { "type": "string", "enum": ["before", "after", "onOrBefore", "onOrAfter", "equals"] }, "value": { "type": "string", "format": "date-time" } } },
+            "SetEnabledInput": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
+            "RegisterDeviceInput": { "type": "object", "additionalProperties": false, "required": ["deviceToken", "installationId", "environment"], "properties": { "deviceToken": { "type": "string", "minLength": 32, "maxLength": 256 }, "installationId": { "type": "string", "minLength": 4, "maxLength": 200 }, "environment": { "type": "string", "enum": ["SANDBOX", "PRODUCTION"] }, "appVersion": { "type": "string", "maxLength": 50 } } },
+            "RegisterWebPushSubscriptionInput": { "type": "object", "additionalProperties": false, "required": ["endpoint", "keys"], "properties": { "endpoint": { "type": "string", "format": "uri", "maxLength": 4000 }, "keys": { "type": "object", "additionalProperties": false, "required": ["p256dh", "auth"], "properties": { "p256dh": { "type": "string", "minLength": 20, "maxLength": 500 }, "auth": { "type": "string", "minLength": 8, "maxLength": 200 } } } } },
+            "User": { "type": "object", "required": ["id", "email", "hasPassword", "hasGoogle", "hasApple"], "properties": { "id": { "type": "string" }, "email": { "type": "string", "format": "email" }, "displayName": { "type": ["string", "null"] }, "hasPassword": { "type": "boolean" }, "hasGoogle": { "type": "boolean" }, "hasApple": { "type": "boolean" } } },
+            "Organization": { "type": "object", "required": ["id", "name", "role", "createdAt", "updatedAt", "joinedAt"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "role": { "type": "string", "enum": ["OWNER", "MEMBER"] }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" }, "joinedAt": { "type": "string", "format": "date-time" }, "apiKey": { "$ref": "#/components/schemas/ApiKeySummary" }, "_count": { "type": "object", "properties": { "memberships": { "type": "integer" }, "services": { "type": "integer" } } } } },
+            "ApiKeySummary": { "type": ["object", "null"], "properties": { "keyPrefix": { "type": "string" }, "lastFour": { "type": "string" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+            "Membership": { "type": "object", "required": ["id", "role", "createdAt", "user"], "properties": { "id": { "type": "string" }, "role": { "type": "string", "enum": ["OWNER", "MEMBER"] }, "createdAt": { "type": "string", "format": "date-time" }, "user": { "type": "object", "required": ["id", "email"], "properties": { "id": { "type": "string" }, "email": { "type": "string", "format": "email" }, "displayName": { "type": ["string", "null"] } } } } },
+            "AgentToken": { "type": "object", "required": ["id", "name", "keyPrefix", "lastFour", "createdAt"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "keyPrefix": { "type": "string" }, "lastFour": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "lastUsedAt": { "type": ["string", "null"], "format": "date-time" }, "revokedAt": { "type": ["string", "null"], "format": "date-time" } } },
+            "ServiceSummary": { "type": "object", "required": ["id", "name", "displayName"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "displayName": { "type": "string" } } },
+            "Service": { "allOf": [{ "$ref": "#/components/schemas/ServiceSummary" }, { "type": "object", "required": ["createdAt", "_count"], "properties": { "createdAt": { "type": "string", "format": "date-time" }, "_count": { "type": "object", "required": ["events"], "properties": { "events": { "type": "integer" } } } } }] },
+            "EventSummary": { "type": "object", "required": ["id", "type", "title", "body", "createdAt", "service"], "properties": { "id": { "type": "string" }, "type": { "type": "string" }, "title": { "type": "string" }, "body": { "type": "string" }, "externalId": { "type": ["string", "null"] }, "actionUrl": { "type": ["string", "null"], "format": "uri" }, "createdAt": { "type": "string", "format": "date-time" }, "service": { "$ref": "#/components/schemas/ServiceSummary" } } },
+            "EventDetail": { "allOf": [{ "$ref": "#/components/schemas/EventSummary" }, { "type": "object", "required": ["serviceId"], "properties": { "serviceId": { "type": "string" }, "metadata": { "type": ["object", "null"], "additionalProperties": true } } }] },
+            "EventPage": { "type": "object", "required": ["events"], "properties": { "events": { "type": "array", "items": { "$ref": "#/components/schemas/EventSummary" } }, "nextCursor": { "type": ["string", "null"] } } },
+            "DeliverySummary": { "type": "object", "required": ["sent", "failed", "suppressedUsers", "eligibleDevices"], "properties": { "sent": { "type": "integer" }, "failed": { "type": "integer" }, "suppressedUsers": { "type": "integer" }, "eligibleDevices": { "type": "integer" } } },
+            "IngestionResult": { "type": "object", "required": ["event", "duplicate", "delivery"], "properties": { "event": { "$ref": "#/components/schemas/EventDetail" }, "duplicate": { "type": "boolean" }, "delivery": { "$ref": "#/components/schemas/DeliverySummary" } } },
+            "TypeOverride": { "type": "object", "required": ["type", "enabled", "updatedAt"], "properties": { "type": { "type": "string" }, "enabled": { "type": "boolean" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+            "ServicePreference": { "type": "object", "required": ["id", "name", "displayName", "enabled", "typeOverrides"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "displayName": { "type": "string" }, "enabled": { "type": "boolean" }, "typeOverrides": { "type": "array", "items": { "$ref": "#/components/schemas/TypeOverride" } } } },
+            "PreferenceRecord": { "type": "object", "required": ["serviceId", "typeKey", "enabled", "updatedAt"], "properties": { "serviceId": { "type": "string" }, "typeKey": { "type": "string" }, "enabled": { "type": "boolean" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+            "Device": { "type": "object", "required": ["id", "installationId", "environment", "enabled", "lastSeenAt"], "properties": { "id": { "type": "string" }, "installationId": { "type": "string" }, "environment": { "type": "string", "enum": ["SANDBOX", "PRODUCTION"] }, "appVersion": { "type": ["string", "null"] }, "enabled": { "type": "boolean" }, "lastSeenAt": { "type": "string", "format": "date-time" } } },
+            "WebPushConfiguration": { "type": "object", "required": ["enabled"], "properties": { "enabled": { "type": "boolean" }, "publicKey": { "type": ["string", "null"] } } },
+            "WebPushSubscription": { "type": "object", "required": ["id", "enabled", "lastSeenAt"], "properties": { "id": { "type": "string" }, "enabled": { "type": "boolean" }, "lastSeenAt": { "type": "string", "format": "date-time" } } },
+            "HealthResponse": { "type": "object", "required": ["status", "service"], "properties": { "status": { "type": "string", "const": "ok" }, "service": { "type": "string", "const": "agent-push-kit" } } },
+            "AuthResponse": { "type": "object", "required": ["accessToken", "user", "organizations"], "properties": { "accessToken": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" }, "organizations": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } }, "bootstrapApiKey": { "type": "string", "description": "Present only when a new customer account was created." } } },
+            "CurrentAccount": { "type": "object", "required": ["user", "organizations"], "properties": { "user": { "$ref": "#/components/schemas/User" }, "organizations": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } } } },
+            "OrganizationRecord": { "type": "object", "required": ["id", "name", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+            "OrganizationCreated": { "type": "object", "required": ["organization", "apiKey"], "properties": { "organization": { "$ref": "#/components/schemas/OrganizationRecord" }, "apiKey": { "type": "string", "pattern": "^apk_" } } },
+            "OrganizationApiKeyCreated": { "type": "object", "required": ["keyPrefix", "lastFour", "updatedAt", "apiKey"], "properties": { "keyPrefix": { "type": "string" }, "lastFour": { "type": "string" }, "updatedAt": { "type": "string", "format": "date-time" }, "apiKey": { "type": "string", "pattern": "^apk_" } } },
+            "AgentTokenCreated": { "allOf": [{ "$ref": "#/components/schemas/AgentToken" }, { "type": "object", "required": ["token"], "properties": { "token": { "type": "string", "pattern": "^apt_" } } }] },
+            "AcceptedResponse": { "type": "object", "required": ["accepted"], "properties": { "accepted": { "type": "boolean" } } },
+            "DeletedResponse": { "type": "object", "required": ["deleted"], "properties": { "deleted": { "type": "boolean" } } },
+            "RevokedResponse": { "type": "object", "required": ["revoked"], "properties": { "revoked": { "type": "boolean" } } },
+            "InheritedResponse": { "type": "object", "required": ["inherited"], "properties": { "inherited": { "type": "boolean" } } },
+            "DisabledResponse": { "type": "object", "required": ["disabled"], "properties": { "disabled": { "type": "boolean" } } },
+            "ErrorResponse": { "type": "object", "required": ["statusCode", "message"], "properties": { "statusCode": { "type": "integer" }, "message": { "type": "string" }, "error": { "type": "string" } } }
+        }
+    },
+    "security": [{ "UserOrAgent": [] }]
+}

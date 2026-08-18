@@ -1,0 +1,32 @@
+name: Publish npm package
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: agent-push-kit-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          registry-url: https://registry.npmjs.org
+      - name: Install the npm CLI version required for trusted publishing
+        run: npm install --global npm@11.5.1
+      - run: npm ci
+      - name: Publish once
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "${NAME}@${VERSION}" version --json >/dev/null 2>&1; then
+            echo "${NAME}@${VERSION} is already published."
+            exit 0
+          fi
+          npm publish --access public

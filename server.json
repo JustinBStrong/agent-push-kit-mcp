@@ -1,0 +1,57 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.justinbstrong/agent-push-kit",
+  "title": "Agent Push Kit",
+  "description": "Send, search, and manage notifications, accounts, and push preferences",
+  "version": "0.1.0",
+  "websiteUrl": "https://agentpushkit.com/docs/mcp",
+  "repository": {
+    "url": "https://github.com/JustinBStrong/agent-push-kit-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.chatdna.co/agent-push-kit/v1/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {agent_push_kit_token}",
+          "variables": {
+            "agent_push_kit_token": {
+              "description": "A named Agent Push Kit agent token beginning with apt_",
+              "isRequired": true,
+              "isSecret": true,
+              "placeholder": "apt_…"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "agent-push-kit-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "AGENT_PUSH_KIT_TOKEN",
+          "description": "A named Agent Push Kit agent token beginning with apt_",
+          "isRequired": true,
+          "isSecret": true,
+          "placeholder": "apt_…"
+        },
+        {
+          "name": "AGENT_PUSH_KIT_API_BASE",
+          "description": "Optional API base override for development",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "https://api.chatdna.co/agent-push-kit/v1"
+        }
+      ]
+    }
+  ]
+}
