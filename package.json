@@ -1,6 +1,6 @@
 {
   "name": "agent-push-kit-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Complete Agent Push Kit MCP server over stdio",
   "license": "MIT",
   "author": "Justin Strong",
@@ -13,7 +13,7 @@
     "url": "https://github.com/JustinBStrong/agent-push-kit-mcp/issues"
   },
   "type": "module",
-  "mcpName": "io.github.justinbstrong/agent-push-kit",
+  "mcpName": "io.github.JustinBStrong/agent-push-kit",
   "bin": {
     "agent-push-kit-mcp": "dist/cli.js"
   },
